@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NUMBER RACE!</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Fredoka -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            font-family: 'Fredoka', cursive, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        /* Face Emojis Right Towards Finish Line */
+        .avatar-facing-right {
+            display: inline-block;
+            transform: scaleX(-1);
+        }
+
+        /* Smooth track animations */
+        .runner-transition {
+            transition: left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Pulsing & Cheering Animations */
+        @keyframes pulse-subtle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .animate-pulse-subtle {
+            animation: pulse-subtle 1.5s infinite;
+        }
+
+        @keyframes bounce-celebrate {
+            0%, 100% { transform: translateY(0) scaleX(-1); }
+            50% { transform: translateY(-12px) scaleX(-1); }
+        }
+        .animate-celebrate {
+            animation: bounce-celebrate 0.5s infinite alternate;
+        }
+
+        /* Button standard depth style */
+        .btn-3d {
+            transition: all 0.1s ease;
+            box-shadow: 0px 6px 0px rgba(0, 0, 0, 0.2);
+        }
+        .btn-3d:active {
+            transform: translateY(4px);
+            box-shadow: 0px 2px 0px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Custom track styling */
+        .track-pattern {
+            background-color: #f1f5f9;
+            background-image: repeating-linear-gradient(90deg, #e2e8f0 0, #e2e8f0 15px, #f1f5f9 15px, #f1f5f9 30px);
+        }
+
+        .finish-line-pattern {
+            background: repeating-linear-gradient(
+                45deg,
+                #000,
+                #000 10px,
+                #fff 10px,
+                #fff 20px
+            );
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-800 min-h-screen flex flex-col justify-center items-center overflow-x-hidden p-2 sm:p-4">
+
+    <div id="app-container" class="w-full max-w-7xl mx-auto min-h-[92vh] bg-gradient-to-b from-sky-400 to-indigo-600 rounded-3xl p-3 sm:p-6 shadow-2xl border-4 sm:border-8 border-sky-200 flex flex-col justify-between relative overflow-hidden">
+        
+        <!-- ================= HOME SCREEN ================= -->
+        <div id="screen-home" class="flex flex-col items-center justify-center flex-1 text-center py-6">
+            <div class="bg-white/90 backdrop-blur-md px-6 py-4 rounded-3xl border-4 border-yellow-400 shadow-xl mb-6 transform -rotate-1">
+                <h1 class="text-4xl sm:text-6xl md:text-7xl font-bold text-indigo-600 tracking-wide drop-shadow-md">
+                    🏁 NUMBER RACE!
+                </h1>
+                <p class="text-lg sm:text-2xl text-pink-500 font-bold mt-1">
+                    Match the Number. Race to the Finish!
+                </p>
+            </div>
+
+            <div class="flex flex-col gap-4 w-full max-w-md px-4">
+                <button id="btn-start-race1" class="btn-3d bg-emerald-500 hover:bg-emerald-400 text-white text-2xl sm:text-3xl font-bold py-4 sm:py-5 px-6 rounded-2xl border-b-4 border-emerald-700 flex items-center justify-center gap-3">
+                    <span class="text-3xl sm:text-4xl avatar-facing-right">🏃</span> RACE 1 (1 Player)
+                </button>
+
+                <button id="btn-start-race2" class="btn-3d bg-amber-500 hover:bg-amber-400 text-white text-2xl sm:text-3xl font-bold py-4 sm:py-5 px-6 rounded-2xl border-b-4 border-amber-700 flex items-center justify-center gap-3">
+                    <span class="text-3xl sm:text-4xl avatar-facing-right">🏃🏃</span> RACE 2 (2 Players)
+                </button>
+
+                <button id="btn-open-settings" class="btn-3d bg-purple-600 hover:bg-purple-500 text-white text-xl sm:text-2xl font-bold py-3 sm:py-4 px-6 rounded-2xl border-b-4 border-purple-800 flex items-center justify-center gap-2">
+                    ⚙️ SETTINGS
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= SETTINGS PANEL ================= -->
+        <div id="screen-settings" class="hidden flex-col flex-1 bg-white/95 backdrop-blur-md rounded-2xl p-4 sm:p-8 border-4 border-purple-300 shadow-xl max-w-4xl mx-auto w-full overflow-y-auto">
+            <h2 class="text-3xl sm:text-4xl font-bold text-purple-700 text-center mb-6 border-b-4 border-purple-200 pb-2">
+                ⚙️ TEACHER SETTINGS
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Timer Option -->
+                <div class="bg-purple-50 p-4 rounded-2xl border-2 border-purple-200">
+                    <label class="block text-xl font-bold text-purple-800 mb-2">⏱️ Timer per Question:</label>
+                    <div class="grid grid-cols-3 gap-2" id="timer-selector">
+                        <button data-value="10" class="btn-setting-timer btn-3d bg-purple-500 text-white font-bold py-2 rounded-xl text-lg">10s</button>
+                        <button data-value="20" class="btn-setting-timer btn-3d bg-white text-purple-700 border-2 border-purple-300 font-bold py-2 rounded-xl text-lg">20s</button>
+                        <button data-value="30" class="btn-setting-timer btn-3d bg-white text-purple-700 border-2 border-purple-300 font-bold py-2 rounded-xl text-lg">30s</button>
+                        <button data-value="40" class="btn-setting-timer btn-3d bg-white text-purple-700 border-2 border-purple-300 font-bold py-2 rounded-xl text-lg">40s</button>
+                        <button data-value="60" class="btn-setting-timer btn-3d bg-white text-purple-700 border-2 border-purple-300 font-bold py-2 rounded-xl text-lg">60s</button>
+                        <button data-value="80" class="btn-setting-timer btn-3d bg-white text-purple-700 border-2 border-purple-300 font-bold py-2 rounded-xl text-lg">80s</button>
+                    </div>
+                </div>
+
+                <!-- Number Range Option -->
+                <div class="bg-purple-50 p-4 rounded-2xl border-2 border-purple-200">
+                    <label class="block text-xl font-bold text-purple-800 mb-2">🔢 Number Range:</label>
+                    <div class="grid grid-cols-3 gap-2" id="range-selector">
+                        <button data-value="1-10" class="btn-setting-range btn-3d bg-purple-500 text-white font-bold py-2 rounded-xl text-lg">1 – 10</button>
+                        <button data-value="11-20" class="btn-setting-range btn-3d bg-white text-purple-700 border-2 border-purple-300 font-bold py-2 rounded-xl text-lg">11 – 20</button>
+                        <button data-value="1-20" class="btn-setting-range btn-3d bg-white text-purple-700 border-2 border-purple-300 font-bold py-2 rounded-xl text-lg">1 – 20</button>
+                    </div>
+                </div>
+
+                <!-- Sound Option -->
+                <div class="bg-purple-50 p-4 rounded-2xl border-2 border-purple-200 flex items-center justify-between">
+                    <span class="text-xl font-bold text-purple-800">🔊 Sound Effects:</span>
+                    <button id="btn-toggle-sound" class="btn-3d bg-emerald-500 text-white font-bold py-2 px-6 rounded-xl text-lg">ON</button>
+                </div>
+
+                <!-- Full Screen Toggle -->
+                <div class="bg-purple-50 p-4 rounded-2xl border-2 border-purple-200 flex items-center justify-between">
+                    <span class="text-xl font-bold text-purple-800">🖥️️ Screen Mode:</span>
+                    <button id="btn-toggle-fullscreen" class="btn-3d bg-indigo-500 text-white font-bold py-2 px-4 rounded-xl text-lg">Full Screen</button>
+                </div>
+            </div>
+
+            <!-- Avatar Selection -->
+            <div class="bg-purple-50 p-4 rounded-2xl border-2 border-purple-200 mb-6">
+                <h3 class="text-xl font-bold text-purple-800 mb-3"> Choose Characters:</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <p class="font-bold text-emerald-700 mb-1">Player 1 Avatar:</p>
+                        <div class="flex flex-wrap gap-2" id="p1-avatar-selector"></div>
+                    </div>
+                    <div>
+                        <p class="font-bold text-amber-700 mb-1">Player 2 Avatar:</p>
+                        <div class="flex flex-wrap gap-2" id="p2-avatar-selector"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-auto flex justify-center">
+                <button id="btn-settings-back" class="btn-3d bg-rose-500 hover:bg-rose-400 text-white text-xl font-bold py-3 px-8 rounded-2xl border-b-4 border-rose-700">
+                    ← Back to Home
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= GAMEPLAY: RACE 1 (SINGLE PLAYER) ================= -->
+        <div id="screen-race1" class="hidden flex-col flex-1 justify-between gap-3">
+            <!-- HUD Top Bar -->
+            <div class="bg-white/95 rounded-2xl p-3 shadow-md flex items-center justify-between gap-2 border-2 border-sky-300">
+                <button id="btn-p1-home" class="btn-3d bg-rose-500 text-white text-base sm:text-lg font-bold py-1.5 px-3 rounded-xl">
+                    🏠 Home
+                </button>
+                <div class="flex items-center gap-3 font-bold text-base sm:text-xl text-indigo-900">
+                    <span>Q: <span id="r1-q-count" class="text-indigo-600">1</span>/10</span>
+                    <span>Score: <span id="r1-score" class="text-emerald-600">0</span></span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-base sm:text-lg text-amber-600">⏱️ <span id="r1-timer-text">10</span>s</span>
+                </div>
+            </div>
+
+            <!-- Timer Progress Bar -->
+            <div class="w-full bg-slate-200 h-4 rounded-full overflow-hidden border-2 border-white shadow-inner">
+                <div id="r1-timer-bar" class="bg-amber-400 h-full w-full transition-all duration-1000 linear"></div>
+            </div>
+
+            <!-- Race Track Visual -->
+            <div class="bg-white/90 rounded-2xl p-4 shadow-lg border-2 border-sky-200 flex flex-col justify-center">
+                <div class="relative w-full h-16 sm:h-20 track-pattern rounded-xl border-2 border-slate-300 overflow-hidden flex items-center px-2">
+                    <!-- Start & Finish markers -->
+                    <span class="absolute left-2 text-xs font-bold text-slate-400">START</span>
+                    <div class="absolute right-0 top-0 bottom-0 w-8 finish-line-pattern opacity-80"></div>
+                    <span class="absolute right-10 text-2xl">🏁</span>
+
+                    <!-- Player Avatar -->
+                    <div id="r1-runner" class="absolute left-0 text-4xl sm:text-5xl avatar-facing-right runner-transition">
+                        🏃
+                    </div>
+                </div>
+            </div>
+
+            <!-- Central Question Display Card -->
+            <div class="bg-white/95 rounded-3xl p-4 sm:p-6 shadow-xl border-4 border-indigo-200 text-center my-auto flex flex-col items-center">
+                <p class="text-sm sm:text-base uppercase tracking-wider font-bold text-indigo-400 mb-1">Target Question</p>
+                <div class="flex items-center justify-center gap-4 mb-3">
+                    <h2 id="r1-target-display" class="text-4xl sm:text-6xl font-bold text-indigo-700 tracking-wide">
+                        ...
+                    </h2>
+                    <button id="btn-r1-listen" class="btn-3d bg-amber-400 hover:bg-amber-300 text-amber-950 font-bold p-3 rounded-2xl text-xl flex items-center gap-1">
+                        🔊 <span class="text-sm hidden sm:inline">Listen</span>
+                    </button>
+                </div>
+                <div id="r1-feedback" class="h-8 font-bold text-xl sm:text-2xl text-emerald-600"></div>
+            </div>
+
+            <!-- 4 Multiple Choice Answer Cards -->
+            <div id="r1-options-grid" class="grid grid-cols-2 gap-3 sm:gap-4">
+                <!-- Injected dynamically -->
+            </div>
+        </div>
+
+        <!-- ================= GAMEPLAY: RACE 2 (SPLIT-SCREEN 2 PLAYER) ================= -->
+        <div id="screen-race2" class="hidden flex-col flex-1 justify-between gap-2">
+            <!-- HUD Bar for Race 2 -->
+            <div class="bg-white/95 rounded-2xl p-2 sm:p-3 shadow-md flex items-center justify-between border-2 border-sky-300">
+                <button id="btn-p2-home" class="btn-3d bg-rose-500 text-white text-sm sm:text-lg font-bold py-1 px-3 rounded-xl">
+                    🏠 Home
+                </button>
+                <h3 class="text-base sm:text-2xl font-bold text-purple-700 text-center">🏁 2-PLAYER SPLIT-SCREEN</h3>
+                <div class="text-sm sm:text-lg font-bold text-amber-600">
+                    ⏱️ <span id="r2-timer-text">10</span>s
+                </div>
+            </div>
+
+            <!-- Universal Timer Bar -->
+            <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden border border-white">
+                <div id="r2-timer-bar" class="bg-amber-400 h-full w-full transition-all duration-1000 linear"></div>
+            </div>
+
+            <!-- Split-Screen Grid Layout -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1">
+                
+                <!-- PLAYER 1 PANEL -->
+                <div id="p1-panel" class="bg-emerald-50/95 rounded-3xl p-3 sm:p-4 border-4 border-emerald-400 shadow-lg flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between border-b-2 border-emerald-200 pb-2 mb-2">
+                            <div class="flex items-center gap-2">
+                                <span id="p1-hud-avatar" class="text-3xl avatar-facing-right">🏎️</span>
+                                <span class="font-bold text-lg sm:text-xl text-emerald-900">Player 1</span>
+                            </div>
+                            <span class="font-bold text-emerald-800 text-sm sm:text-base">Q: <span id="p1-q-num">1</span>/10 | Score: <span id="p1-score">0</span></span>
+                        </div>
+
+                        <!-- Player 1 Mini Track -->
+                        <div class="relative w-full h-12 track-pattern rounded-xl border border-emerald-300 overflow-hidden flex items-center px-2 mb-3">
+                            <div class="absolute right-0 top-0 bottom-0 w-6 finish-line-pattern opacity-80"></div>
+                            <div id="p1-runner" class="absolute left-0 text-3xl avatar-facing-right runner-transition">🏎️</div>
+                        </div>
+
+                        <!-- Player 1 Question -->
+                        <div class="bg-white rounded-2xl p-3 text-center border-2 border-emerald-200 mb-3 shadow-sm">
+                            <div class="flex items-center justify-center gap-2">
+                                <h3 id="p1-target" class="text-3xl sm:text-4xl font-bold text-emerald-700">...</h3>
+                                <button id="btn-p1-listen" class="btn-3d bg-amber-300 hover:bg-amber-200 text-amber-900 font-bold p-2 rounded-xl text-base">
+                                    🔊 Listen
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Options Grid -->
+                        <div id="p1-options" class="grid grid-cols-2 gap-2"></div>
+                    </div>
+
+                    <!-- Feedback & Next Button -->
+                    <div class="flex items-center justify-between mt-2 pt-2 border-t border-emerald-200 min-h-[48px]">
+                        <span id="p1-feedback" class="font-bold text-base sm:text-lg text-emerald-700"></span>
+                        <button id="btn-p1-next" class="btn-3d bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2 px-4 rounded-xl text-lg hidden">
+                            ➡️ NEXT
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PLAYER 2 PANEL -->
+                <div id="p2-panel" class="bg-amber-50/95 rounded-3xl p-3 sm:p-4 border-4 border-amber-400 shadow-lg flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between border-b-2 border-amber-200 pb-2 mb-2">
+                            <div class="flex items-center gap-2">
+                                <span id="p2-hud-avatar" class="text-3xl avatar-facing-right">🦄</span>
+                                <span class="font-bold text-lg sm:text-xl text-amber-900">Player 2</span>
+                            </div>
+                            <span class="font-bold text-amber-800 text-sm sm:text-base">Q: <span id="p2-q-num">1</span>/10 | Score: <span id="p2-score">0</span></span>
+                        </div>
+
+                        <!-- Player 2 Mini Track -->
+                        <div class="relative w-full h-12 track-pattern rounded-xl border border-amber-300 overflow-hidden flex items-center px-2 mb-3">
+                            <div class="absolute right-0 top-0 bottom-0 w-6 finish-line-pattern opacity-80"></div>
+                            <div id="p2-runner" class="absolute left-0 text-3xl avatar-facing-right runner-transition">🦄</div>
+                        </div>
+
+                        <!-- Player 2 Question -->
+                        <div class="bg-white rounded-2xl p-3 text-center border-2 border-amber-200 mb-3 shadow-sm">
+                            <div class="flex items-center justify-center gap-2">
+                                <h3 id="p2-target" class="text-3xl sm:text-4xl font-bold text-amber-700">...</h3>
+                                <button id="btn-p2-listen" class="btn-3d bg-amber-300 hover:bg-amber-200 text-amber-900 font-bold p-2 rounded-xl text-base">
+                                    🔊 Listen
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Options Grid -->
+                        <div id="p2-options" class="grid grid-cols-2 gap-2"></div>
+                    </div>
+
+                    <!-- Feedback & Next Button -->
+                    <div class="flex items-center justify-between mt-2 pt-2 border-t border-amber-200 min-h-[48px]">
+                        <span id="p2-feedback" class="font-bold text-base sm:text-lg text-amber-700"></span>
+                        <button id="btn-p2-next" class="btn-3d bg-amber-500 hover:bg-amber-400 text-white font-bold py-2 px-4 rounded-xl text-lg hidden">
+                            ➡️ NEXT
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================= FINISH LINE / RESULTS SCREEN ================= -->
+        <div id="screen-results" class="hidden flex-col items-center justify-center flex-1 bg-white/95 backdrop-blur-md rounded-3xl p-6 border-4 border-yellow-400 shadow-2xl text-center max-w-2xl mx-auto w-full my-auto">
+            <h2 id="results-title" class="text-4xl sm:text-6xl font-bold text-indigo-600 mb-2">🏆 RACE FINISHED!</h2>
+            <p id="results-subtitle" class="text-xl sm:text-2xl font-bold text-pink-500 mb-6">Great job on the track!</p>
+
+            <div id="results-score-box" class="bg-sky-50 rounded-2xl p-4 border-2 border-sky-200 w-full mb-6 text-xl sm:text-2xl font-bold text-slate-700">
+                <!-- Dynamic Results Content -->
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-4">
+                <button id="btn-results-restart" class="btn-3d bg-emerald-500 hover:bg-emerald-400 text-white text-xl font-bold py-3 px-6 rounded-2xl border-b-4 border-emerald-700">
+                    🔄 Play Again
+                </button>
+                <button id="btn-results-home" class="btn-3d bg-indigo-600 hover:bg-indigo-500 text-white text-xl font-bold py-3 px-6 rounded-2xl border-b-4 border-indigo-800">
+                    🏠 Home Screen
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Confirmation Modal for Home Exit -->
+    <div id="modal-confirm-home" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full text-center border-4 border-indigo-300 shadow-2xl">
+            <h3 class="text-2xl font-bold text-slate-800 mb-3">Quit current race?</h3>
+            <p class="text-slate-600 mb-6">Your current race progress will be lost.</p>
+            <div class="flex justify-center gap-4">
+                <button id="btn-modal-cancel" class="btn-3d bg-slate-300 text-slate-800 font-bold py-2 px-6 rounded-xl">Cancel</button>
+                <button id="btn-modal-confirm" class="btn-3d bg-rose-500 text-white font-bold py-2 px-6 rounded-xl">Quit Race</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Number Words Dictionary (Strictly Lowercase Requirement)
+        const NUMBER_WORDS = {
+            1: "one", 2: "two", 3: "three", 4: "four", 5: "five",
+            6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten",
+            11: "eleven", 12: "twelve", 13: "thirteen", 14: "fourteen", 15: "fifteen",
+            16: "sixteen", 17: "seventeen", 18: "eighteen", 19: "nineteen", 20: "twenty"
+        };
+
+        const AVATARS = [
+            { id: 'runner', icon: '🏃', name: 'Runner' },
+            { id: 'car', icon: '🏎️', name: 'Race Car' },
+            { id: 'lion', icon: '🦁', name: 'Lion' },
+            { id: 'unicorn', icon: '🦄', name: 'Unicorn' },
+            { id: 'dinosaur', icon: '🦖', name: 'Dinosaur' },
+            { id: 'cat', icon: '🐱', name: 'Cat' },
+            { id: 'dog', icon: '🐶', name: 'Dog' }
+        ];
+
+        // Global State Configuration
+        const state = {
+            settings: {
+                timer: 10,
+                range: '1-10',
+                sound: true,
+                p1Avatar: '🏎️',
+                p2Avatar: '🦄'
+            },
+            currentGameMode: null, // 1 or 2
+            p1: { score: 0, qIndex: 0, pos: 0, currentQ: null, answered: false, finishTime: null, startTime: null },
+            p2: { score: 0, qIndex: 0, pos: 0, currentQ: null, answered: false, finishTime: null, startTime: null },
+            questions: [],
+            timerInterval: null,
+            timerLeft: 10,
+            raceStartTime: 0
+        };
+
+        // Synthesizer Audio Engine
+        const SoundEngine = {
+            audioCtx: null,
+            initCtx() {
+                if (!this.audioCtx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) this.audioCtx = new AudioCtx();
+                }
+                if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                    this.audioCtx.resume();
+                }
+            },
+            speak(text) {
+                if (!state.settings.sound) return;
+                
+                // Clear any ongoing speech to prevent overlapping voices
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = 0.85; // Natural clear speed for learners
+                    utterance.pitch = 1.0;
+                    
+                    const voices = window.speechSynthesis.getVoices();
+                    const englishVoice = voices.find(v => v.lang.startsWith('en'));
+                    if (englishVoice) utterance.voice = englishVoice;
+
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    this.beep(523.25, 0.15); // Fallback tone
+                }
+            },
+            playSuccess() {
+                if (!state.settings.sound) return;
+                this.initCtx();
+                if (!this.audioCtx) return;
+                const now = this.audioCtx.currentTime;
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
+                osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.2); // G5
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            },
+            playWrong() {
+                if (!state.settings.sound) return;
+                this.initCtx();
+                if (!this.audioCtx) return;
+                const now = this.audioCtx.currentTime;
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.setValueAtTime(180, now + 0.15);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            },
+            beep(freq, dur) {
+                this.initCtx();
+                if (!this.audioCtx) return;
+                const now = this.audioCtx.currentTime;
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + dur);
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + dur);
+            }
+        };
+
+        // Helper Utilities
+        function shuffle(arr) {
+            const array = [...arr];
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function getRangeNumbers() {
+            if (state.settings.range === '1-10') return Array.from({length: 10}, (_, i) => i + 1);
+            if (state.settings.range === '11-20') return Array.from({length: 10}, (_, i) => i + 11);
+            return Array.from({length: 20}, (_, i) => i + 1); // 1-20
+        }
+
+        // Generate 10 randomized balanced questions
+        function generateQuestions() {
+            const availableNumbers = getRangeNumbers();
+            const questions = [];
+
+            for (let i = 0; i < 10; i++) {
+                const targetNum = availableNumbers[Math.floor(Math.random() * availableNumbers.length)];
+                const targetWord = NUMBER_WORDS[targetNum]; // Lowercase word
+                const isWordToNum = Math.random() < 0.5; // Randomly mix Type A & Type B
+
+                // Build 3 smart distractors
+                const distractors = new Set();
+                while (distractors.size < 3) {
+                    const distNum = getRandomInt(
+                        Math.min(...availableNumbers),
+                        Math.max(...availableNumbers)
+                    );
+                    if (distNum !== targetNum) distractors.add(distNum);
+                }
+
+                let choices = [];
+                if (isWordToNum) {
+                    // Target: Word -> Answers: Numbers
+                    choices = shuffle([targetNum, ...Array.from(distractors)]);
+                } else {
+                    // Target: Number -> Answers: Lowercase Words
+                    choices = shuffle([targetWord, ...Array.from(distractors).map(n => NUMBER_WORDS[n])]);
+                }
+
+                questions.push({
+                    type: isWordToNum ? 'WORD_TO_NUM' : 'NUM_TO_WORD',
+                    targetNum,
+                    targetWord,
+                    displayTarget: isWordToNum ? targetWord : targetNum.toString(),
+                    correctAnswer: isWordToNum ? targetNum : targetWord,
+                    spokenText: targetWord, // Voice always pronounces English number word
+                    choices
+                });
+            }
+            return questions;
+        }
+
+        // UI Navigation
+        function showScreen(screenId) {
+            ['screen-home', 'screen-settings', 'screen-race1', 'screen-race2', 'screen-results'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+                document.getElementById(id).classList.remove('flex');
+            });
+            const active = document.getElementById(screenId);
+            active.classList.remove('hidden');
+            active.classList.add('flex');
+        }
+
+        // Initialize Settings Selectors
+        function initSettingsUI() {
+            // Render P1 & P2 Avatars Options
+            const p1Container = document.getElementById('p1-avatar-selector');
+            const p2Container = document.getElementById('p2-avatar-selector');
+            p1Container.innerHTML = '';
+            p2Container.innerHTML = '';
+
+            AVATARS.forEach(av => {
+                const btn1 = document.createElement('button');
+                btn1.className = `btn-3d p-2 rounded-xl text-2xl border-2 ${state.settings.p1Avatar === av.icon ? 'bg-emerald-400 border-emerald-600' : 'bg-white border-slate-200'}`;
+                btn1.innerHTML = `<span class="avatar-facing-right">${av.icon}</span>`;
+                btn1.onclick = () => {
+                    state.settings.p1Avatar = av.icon;
+                    initSettingsUI();
+                };
+                p1Container.appendChild(btn1);
+
+                const btn2 = document.createElement('button');
+                btn2.className = `btn-3d p-2 rounded-xl text-2xl border-2 ${state.settings.p2Avatar === av.icon ? 'bg-amber-400 border-amber-600' : 'bg-white border-slate-200'}`;
+                btn2.innerHTML = `<span class="avatar-facing-right">${av.icon}</span>`;
+                btn2.onclick = () => {
+                    state.settings.p2Avatar = av.icon;
+                    initSettingsUI();
+                };
+                p2Container.appendChild(btn2);
+            });
+        }
+
+        // Event Listeners for Settings
+        document.querySelectorAll('.btn-setting-timer').forEach(btn => {
+            btn.onclick = (e) => {
+                document.querySelectorAll('.btn-setting-timer').forEach(b => {
+                    b.className = 'btn-setting-timer btn-3d bg-white text-purple-700 border-2 border-purple-300 font-bold py-2 rounded-xl text-lg';
+                });
+                e.target.className = 'btn-setting-timer btn-3d bg-purple-500 text-white font-bold py-2 rounded-xl text-lg';
+                state.settings.timer = parseInt(e.target.dataset.value);
+            };
+        });
+
+        document.querySelectorAll('.btn-setting-range').forEach(btn => {
+            btn.onclick = (e) => {
+                document.querySelectorAll('.btn-setting-range').forEach(b => {
+                    b.className = 'btn-setting-range btn-3d bg-white text-purple-700 border-2 border-purple-300 font-bold py-2 rounded-xl text-lg';
+                });
+                e.target.className = 'btn-setting-range btn-3d bg-purple-500 text-white font-bold py-2 rounded-xl text-lg';
+                state.settings.range = e.target.dataset.value;
+            };
+        });
+
+        document.getElementById('btn-toggle-sound').onclick = (e) => {
+            state.settings.sound = !state.settings.sound;
+            e.target.innerText = state.settings.sound ? 'ON' : 'OFF';
+            e.target.className = state.settings.sound ? 'btn-3d bg-emerald-500 text-white font-bold py-2 px-6 rounded-xl text-lg' : 'btn-3d bg-slate-400 text-white font-bold py-2 px-6 rounded-xl text-lg';
+        };
+
+        document.getElementById('btn-toggle-fullscreen').onclick = () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        };
+
+        // Navigation button hooks
+        document.getElementById('btn-open-settings').onclick = () => { initSettingsUI(); showScreen('screen-settings'); };
+        document.getElementById('btn-settings-back').onclick = () => showScreen('screen-home');
+
+        // ================= RACE 1 LOGIC =================
+        function startRace1() {
+            state.currentGameMode = 1;
+            state.questions = generateQuestions();
+            state.p1 = { score: 0, qIndex: 0, pos: 0, currentQ: state.questions[0], answered: false };
+
+            document.getElementById('r1-runner').innerText = state.settings.p1Avatar;
+            document.getElementById('r1-runner').style.left = '0%';
+            document.getElementById('r1-score').innerText = '0';
+            
+            showScreen('screen-race1');
+            loadRace1Question();
+        }
+
+        function loadRace1Question() {
+            if (state.p1.qIndex >= 10) {
+                finishGame();
+                return;
+            }
+
+            state.p1.currentQ = state.questions[state.p1.qIndex];
+            state.p1.answered = false;
+
+            document.getElementById('r1-q-count').innerText = state.p1.qIndex + 1;
+            document.getElementById('r1-target-display').innerText = state.p1.currentQ.displayTarget;
+            document.getElementById('r1-feedback').innerText = '';
+
+            // Pronounce Target
+            SoundEngine.speak(state.p1.currentQ.spokenText);
+
+            // Render Answer Buttons
+            const grid = document.getElementById('r1-options-grid');
+            grid.innerHTML = '';
+            state.p1.currentQ.choices.forEach(choice => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-3d bg-white hover:bg-sky-50 text-indigo-900 border-4 border-indigo-200 font-bold text-2xl sm:text-4xl py-4 sm:py-6 rounded-2xl shadow-md transition-all';
+                btn.innerText = choice;
+                btn.onclick = () => handleRace1Answer(choice, btn);
+                grid.appendChild(btn);
+            });
+
+            resetTimer(1);
+        }
+
+        function handleRace1Answer(choice, btnElement) {
+            if (state.p1.answered) return;
+
+            const isCorrect = choice === state.p1.currentQ.correctAnswer;
+
+            if (isCorrect) {
+                state.p1.answered = true;
+                clearInterval(state.timerInterval);
+                SoundEngine.playSuccess();
+
+                btnElement.className = 'btn-3d bg-emerald-500 text-white border-4 border-emerald-700 font-bold text-2xl sm:text-4xl py-4 sm:py-6 rounded-2xl shadow-md';
+                document.getElementById('r1-feedback').innerText = getRandomSuccessMsg();
+
+                // Move forward 10% per correct answer (reaches 100% on Q10)
+                state.p1.pos = Math.min(100, state.p1.pos + 10);
+                state.p1.score += 10;
+                document.getElementById('r1-score').innerText = state.p1.score;
+                document.getElementById('r1-runner').style.left = `${Math.min(88, state.p1.pos * 0.88)}%`; // Offset for avatar size
+
+                setTimeout(() => {
+                    state.p1.qIndex++;
+                    loadRace1Question();
+                }, 1200);
+
+            } else {
+                SoundEngine.playWrong();
+                btnElement.className = 'btn-3d bg-rose-400 text-white border-4 border-rose-600 font-bold text-2xl sm:text-4xl py-4 sm:py-6 rounded-2xl shadow-md opacity-60';
+                document.getElementById('r1-feedback').innerText = "Almost! Try again!";
+            }
+        }
+
+        document.getElementById('btn-r1-listen').onclick = () => {
+            if (state.p1.currentQ) SoundEngine.speak(state.p1.currentQ.spokenText);
+        };
+
+        // ================= RACE 2 LOGIC (SPLIT-SCREEN 2 PLAYER) =================
+        function startRace2() {
+            state.currentGameMode = 2;
+            state.questions = generateQuestions();
+            state.raceStartTime = Date.now();
+
+            state.p1 = { score: 0, qIndex: 0, pos: 0, currentQ: state.questions[0], answered: false, finishTime: null };
+            state.p2 = { score: 0, qIndex: 0, pos: 0, currentQ: state.questions[0], answered: false, finishTime: null };
+
+            // Set Avatars
+            document.getElementById('p1-hud-avatar').innerText = state.settings.p1Avatar;
+            document.getElementById('p2-hud-avatar').innerText = state.settings.p2Avatar;
+            document.getElementById('p1-runner').innerText = state.settings.p1Avatar;
+            document.getElementById('p2-runner').innerText = state.settings.p2Avatar;
+
+            document.getElementById('p1-runner').style.left = '0%';
+            document.getElementById('p2-runner').style.left = '0%';
+
+            showScreen('screen-race2');
+            loadRace2PlayerQuestion(1);
+            loadRace2PlayerQuestion(2);
+            resetTimer(2);
+        }
+
+        function loadRace2PlayerQuestion(playerNum) {
+            const pState = playerNum === 1 ? state.p1 : state.p2;
+            const prefix = playerNum === 1 ? 'p1' : 'p2';
+
+            if (pState.qIndex >= 10) {
+                if (!pState.finishTime) {
+                    pState.finishTime = (Date.now() - state.raceStartTime) / 1000;
+                    
+                    // Check if this player was FIRST to complete all 10 questions
+                    const otherState = playerNum === 1 ? state.p2 : state.p1;
+                    if (!otherState.finishTime) {
+                        // First place finish bonus (+50 points for finishing 1st!)
+                        pState.score += 50;
+                        document.getElementById(`${prefix}-score`).innerText = pState.score;
+                        document.getElementById(`${prefix}-feedback`).innerText = "🥇 1st Place Finish Bonus! (+50 pts)";
+                    } else {
+                        document.getElementById(`${prefix}-feedback`).innerText = "🥈 2nd Place Finish!";
+                    }
+                }
+
+                document.getElementById(`${prefix}-target`).innerText = "FINISHED!";
+                document.getElementById(`${prefix}-options`).innerHTML = `<div class="col-span-2 text-center font-bold text-emerald-600 text-xl">🏁 Reached Finish Line!</div>`;
+                document.getElementById(`btn-${prefix}-next`).classList.add('hidden');
+                
+                if (state.p1.qIndex >= 10 && state.p2.qIndex >= 10) {
+                    finishGame();
+                }
+                return;
+            }
+
+            pState.currentQ = state.questions[pState.qIndex];
+            pState.answered = false;
+
+            document.getElementById(`${prefix}-q-num`).innerText = pState.qIndex + 1;
+            document.getElementById(`${prefix}-target`).innerText = pState.currentQ.displayTarget;
+            document.getElementById(`${prefix}-feedback`).innerText = '';
+            document.getElementById(`btn-${prefix}-next`).classList.add('hidden');
+
+            // Render Answer Buttons
+            const grid = document.getElementById(`${prefix}-options`);
+            grid.innerHTML = '';
+            pState.currentQ.choices.forEach(choice => {
+                const btn = document.createElement('button');
+                btn.className = `btn-3d bg-white/90 hover:bg-white text-slate-800 border-2 ${playerNum === 1 ? 'border-emerald-300' : 'border-amber-300'} font-bold text-xl sm:text-2xl py-3 rounded-xl shadow`;
+                btn.innerText = choice;
+                btn.onclick = () => handleRace2Answer(playerNum, choice, btn);
+                grid.appendChild(btn);
+            });
+
+            // Pronounce
+            SoundEngine.speak(pState.currentQ.spokenText);
+        }
+
+        function handleRace2Answer(playerNum, choice, btnElement) {
+            const pState = playerNum === 1 ? state.p1 : state.p2;
+            const prefix = playerNum === 1 ? 'p1' : 'p2';
+
+            if (pState.answered) return;
+
+            const isCorrect = choice === pState.currentQ.correctAnswer;
+
+            if (isCorrect) {
+                pState.answered = true;
+                SoundEngine.playSuccess();
+
+                btnElement.className = 'btn-3d bg-emerald-500 text-white font-bold text-xl sm:text-2xl py-3 rounded-xl shadow';
+                
+                // Speed score bonus: Base 10 pts + time remaining bonus
+                const speedBonus = state.timerLeft; 
+                const pointsEarned = 10 + speedBonus;
+                
+                pState.score += pointsEarned;
+                pState.pos = Math.min(100, pState.pos + 10);
+
+                document.getElementById(`${prefix}-feedback`).innerText = `${getRandomSuccessMsg()} (+${pointsEarned} pts!)`;
+                document.getElementById(`${prefix}-score`).innerText = pState.score;
+                document.getElementById(`${prefix}-runner`).style.left = `${Math.min(85, pState.pos * 0.85)}%`;
+
+                // Show independent NEXT button for fast progression
+                document.getElementById(`btn-${prefix}-next`).classList.remove('hidden');
+
+            } else {
+                SoundEngine.playWrong();
+                btnElement.className = 'btn-3d bg-rose-400 text-white font-bold text-xl sm:text-2xl py-3 rounded-xl shadow opacity-50';
+                document.getElementById(`${prefix}-feedback`).innerText = "Try again!";
+            }
+        }
+
+        // Listen buttons for Race 2
+        document.getElementById('btn-p1-listen').onclick = () => { if(state.p1.currentQ) SoundEngine.speak(state.p1.currentQ.spokenText); };
+        document.getElementById('btn-p2-listen').onclick = () => { if(state.p2.currentQ) SoundEngine.speak(state.p2.currentQ.spokenText); };
+
+        // Independent Next Buttons
+        document.getElementById('btn-p1-next').onclick = () => {
+            state.p1.qIndex++;
+            loadRace2PlayerQuestion(1);
+        };
+        document.getElementById('btn-p2-next').onclick = () => {
+            state.p2.qIndex++;
+            loadRace2PlayerQuestion(2);
+        };
+
+        // Timer Controllers
+        function resetTimer(mode) {
+            clearInterval(state.timerInterval);
+            state.timerLeft = state.settings.timer;
+
+            const textId = mode === 1 ? 'r1-timer-text' : 'r2-timer-text';
+            const barId = mode === 1 ? 'r1-timer-bar' : 'r2-timer-bar';
+
+            document.getElementById(textId).innerText = state.timerLeft;
+            document.getElementById(barId).style.width = '100%';
+
+            state.timerInterval = setInterval(() => {
+                state.timerLeft--;
+                document.getElementById(textId).innerText = state.timerLeft;
+                
+                const pct = (state.timerLeft / state.settings.timer) * 100;
+                document.getElementById(barId).style.width = `${pct}%`;
+
+                if (state.timerLeft <= 0) {
+                    clearInterval(state.timerInterval);
+                    handleTimeOut(mode);
+                }
+            }, 1000);
+        }
+
+        function handleTimeOut(mode) {
+            SoundEngine.playWrong();
+            if (mode === 1) {
+                document.getElementById('r1-feedback').innerText = "TIME'S UP!";
+                setTimeout(() => {
+                    state.p1.qIndex++;
+                    loadRace1Question();
+                }, 1200);
+            } else {
+                // In Race 2, timeout advances both players if not answered
+                if (!state.p1.answered) {
+                    document.getElementById('p1-feedback').innerText = "TIME'S UP!";
+                    document.getElementById('btn-p1-next').classList.remove('hidden');
+                }
+                if (!state.p2.answered) {
+                    document.getElementById('p2-feedback').innerText = "TIME'S UP!";
+                    document.getElementById('btn-p2-next').classList.remove('hidden');
+                }
+            }
+        }
+
+        function getRandomSuccessMsg() {
+            const msgs = ["Great!", "Awesome!", "You got it!", "Excellent!", "Nice!", "Fantastic!"];
+            return msgs[Math.floor(Math.random() * msgs.length)];
+        }
+
+        // Finish Game & Results Screen
+        function finishGame() {
+            clearInterval(state.timerInterval);
+            showScreen('screen-results');
+
+            const scoreBox = document.getElementById('results-score-box');
+            
+            if (state.currentGameMode === 1) {
+                document.getElementById('results-title').innerText = "🏆 RACE FINISHED!";
+                document.getElementById('results-subtitle').innerText = `Final Score: ${state.p1.score} Points`;
+                scoreBox.innerHTML = `
+                    <p class="text-3xl text-emerald-600 font-bold mb-2">Distance Reached: ${state.p1.pos}%</p>
+                    <p class="text-slate-600">Great work identifying number words!</p>
+                `;
+            } else {
+                let winnerText = "";
+                // Compare scores (includes speed bonuses and 1st place finish bonus)
+                if (state.p1.score > state.p2.score) {
+                    winnerText = "🎉 PLAYER 1 WINS! 🏆";
+                } else if (state.p2.score > state.p1.score) {
+                    winnerText = "🎉 PLAYER 2 WINS! 🏆";
+                } else {
+                    // Tie-breaker by finish time
+                    if (state.p1.finishTime < state.p2.finishTime) {
+                        winnerText = "🎉 PLAYER 1 WINS BY SPEED! 🏆";
+                    } else if (state.p2.finishTime < state.p1.finishTime) {
+                        winnerText = "🎉 PLAYER 2 WINS BY SPEED! 🏆";
+                    } else {
+                        winnerText = "🤝 IT'S A PERFECT TIE!";
+                    }
+                }
+
+                const p1TimeStr = state.p1.finishTime ? `${state.p1.finishTime.toFixed(1)}s` : 'N/A';
+                const p2TimeStr = state.p2.finishTime ? `${state.p2.finishTime.toFixed(1)}s` : 'N/A';
+
+                document.getElementById('results-title').innerText = winnerText;
+                document.getElementById('results-subtitle').innerText = "Super Racing Performance!";
+                scoreBox.innerHTML = `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-emerald-100/90 p-3 rounded-2xl border-2 border-emerald-300">
+                            <p class="font-bold text-emerald-800 text-lg">Player 1</p>
+                            <p class="text-2xl text-emerald-700 font-bold">${state.p1.score} pts</p>
+                            <p class="text-sm text-emerald-900 font-semibold mt-1">Time: ${p1TimeStr}</p>
+                        </div>
+                        <div class="bg-amber-100/90 p-3 rounded-2xl border-2 border-amber-300">
+                            <p class="font-bold text-amber-800 text-lg">Player 2</p>
+                            <p class="text-2xl text-amber-700 font-bold">${state.p2.score} pts</p>
+                            <p class="text-sm text-amber-900 font-semibold mt-1">Time: ${p2TimeStr}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Confirmation Modal logic for leaving game
+        let pendingHomeRedirect = false;
+        const confirmModal = document.getElementById('modal-confirm-home');
+        
+        document.getElementById('btn-p1-home').onclick = () => confirmModal.classList.remove('hidden');
+        document.getElementById('btn-p2-home').onclick = () => confirmModal.classList.remove('hidden');
+        
+        document.getElementById('btn-modal-cancel').onclick = () => confirmModal.classList.add('hidden');
+        document.getElementById('btn-modal-confirm').onclick = () => {
+            confirmModal.classList.add('hidden');
+            clearInterval(state.timerInterval);
+            showScreen('screen-home');
+        };
+
+        // Start Buttons
+        document.getElementById('btn-start-race1').onclick = startRace1;
+        document.getElementById('btn-start-race2').onclick = startRace2;
+        document.getElementById('btn-results-restart').onclick = () => {
+            if (state.currentGameMode === 1) startRace1();
+            else startRace2();
+        };
+        document.getElementById('btn-results-home').onclick = () => showScreen('screen-home');
+
+        // Pre-load Web Speech API Voices
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                window.speechSynthesis.getVoices();
+            };
+        }
+    </script>
+</body>
+</html>
